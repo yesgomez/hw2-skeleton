@@ -1,6 +1,12 @@
 from hw2skeleton import cluster
 from hw2skeleton import io
+from rdkit import Chem
 import os
+
+def test_mol_generation():
+    filename_a = os.path.join("data", "276.pdb")
+    site_a = cluster.make_mol(filename_a)
+    assert site_a
 
 def test_similarity():
     filename_a = os.path.join("data", "276.pdb")

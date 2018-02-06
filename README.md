@@ -1,7 +1,7 @@
 # HW2 Skeleton
 
 [![Build
-Status](https://travis-ci.org/ucsf-bmi-203/hw2-skeleton.svg?branch=master)](https://travis-ci.org/ucsf-bmi-203/hw2-skeleton)
+Status](https://travis-ci.org/ygomez/hw2-skeleton.svg?branch=master)](https://travis-ci.org/yesgomez/hw2-skeleton)
 
 Skeleton for clustering project.
 

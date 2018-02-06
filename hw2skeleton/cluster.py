@@ -1,4 +1,11 @@
 from .utils import Atom, Residue, ActiveSite
+import rdkit
+
+def make_mol(pdb):
+    # converts given pdb to mol object for rdkit use
+    site = rdkit.Chem.rdmolfiles.MolFromPDBFile(pdb, sanitize=False, removeHs=False)
+    print (site)
+    return site
 
 def compute_similarity(site_a, site_b):
     """
