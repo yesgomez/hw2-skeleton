@@ -1,11 +1,18 @@
 from .utils import Atom, Residue, ActiveSite
+from prody import *
+import os
 import rdkit
+from rdkit import DataStructs
+from rdkit.Chem.Fingerprints import FingerprintMols
 
-def make_mol(pdb):
+def make_fp(pdb):
     # converts given pdb to mol object for rdkit use
     site = rdkit.Chem.rdmolfiles.MolFromPDBFile(pdb, sanitize=False, removeHs=False)
     print (site)
-    return site
+    # fp = rdkit.Chem.Fingerprints.FingerprintMols.FingerprintsFromMols(site)
+    fp = FingerprintMols.FingerprintMol(site)
+    print (fp)
+    return fp
 
 def compute_similarity(site_a, site_b):
     """
@@ -14,11 +21,9 @@ def compute_similarity(site_a, site_b):
     Input: two ActiveSite instances
     Output: the similarity between them (a floating point number)
     """
-
-    similarity = 0.0
-
-    # Fill in your code here!
-
+    similarity = rdkit.DataStructs.FingerprintSimilarity(site_a, site_b, metric=DataStructs.DiceSimilarity)
+    print (similarity)
+    # similarity = 0.0
     return similarity
 
 
@@ -48,3 +53,4 @@ def cluster_hierarchically(active_sites):
     # Fill in your code here!
 
     return []
+

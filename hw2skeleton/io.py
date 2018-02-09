@@ -17,7 +17,7 @@ def read_active_sites(dir):
     for filepath in glob.iglob(os.path.join(dir, "*.pdb")):
 
         active_sites.append(read_active_site(filepath))
-
+    
     print("Read in %d active sites"%len(active_sites))
 
     return active_sites
@@ -66,7 +66,6 @@ def read_active_site(filepath):
 
             else:  # I've reached a TER card
                 active_site.residues.append(residue)
-
     return active_site
 
 
