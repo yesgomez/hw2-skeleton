@@ -1,5 +1,6 @@
 from .utils import Atom, Residue, ActiveSite
 from prody import *
+from operator import itemgetter
 import os
 import time
 import numpy as np
@@ -29,7 +30,7 @@ def compute_similarity(site_a, site_b):
     return tanSimilarity, dicSimilarity
 
 
-def cluster_by_partitioning(k, active_sites):
+def cluster_by_partitioning(active_sites):
     """
     Cluster a given set of ActiveSite instances using a partitioning method.
     Implementing kmeans.py from git@github.com:siddheshk/Faster-Kmeans.git [https://github.com/siddheshk/Faster-Kmeans/blob/master/Code/kmeans.py]
@@ -38,24 +39,26 @@ def cluster_by_partitioning(k, active_sites):
             (this is really a list of clusters, each of which is list of
             ActiveSite instances)
     """
-    start = time.time()
-    x = Kmeans(k, active_sites, 10, initialCentroids=None)
-    print ("Time taken:",time.time() - start)
-    print (len(x.centroidList), x.error)
-    print (Point(active_sites[0],2), Kmeans.getCentroid(x,Point(active_sites[0],2)))  
-    return x.error, x
-
-def return_clusters(kmeansobj, a_s):
-    no = len(kmeansobj.centroidList) # WE WERE ASSSUMING KMEANSOBJ = X BUT IT DOES NOT. WE NEED TO IMPORT X OR JUST COMBINE BOTH FUNCTIONS
     clusters = []
-    for i in range(no):
-        clusters.append([])
-    for sites in a_s:
-        j = Kmeans.getCentroid(kmeansobj,Point(sites,2))
-        clusterid = j[0]
-        clusters[clusterid].append(sites)
-    print (len(clusters), len(clusters[-1]), len(clusterid))
-    return clusters
+    for k in range(2,20): # intialize with different values of k
+        start = time.time()
+        x = Kmeans(k, active_sites, 10, initialCentroids=None)
+        print ("Time taken:",time.time() - start)
+        clusters.append((x.error, x))
+    bestclusters = min(clusters,key=itemgetter(0)) # choose the value of k that gives the lowest error
+    num = len(bestclusters[1].centroidList)
+    print ("Lowest error was",bestclusters[0],"with",num,"clusters.")
+    sitelist = []
+    for i in range(int(num)):
+        sitelist.append([])
+    for sites in active_sites:
+        j = Kmeans.getCentroid(bestclusters[1],Point(sites,2))
+        clusterid = j[0] # 0 is cluster id, 1 is distance from centroid
+        sitelist[clusterid].append(sites)
+    # print (Point(active_sites[0],2), Kmeans.getCentroid(x,Point(active_sites[0],2))) 
+    # return x
+    print (len(sitelist), len(sitelist[0]), len(sitelist[-1]))
+    return sitelist
 
 def cluster_hierarchically(active_sites):
     """
