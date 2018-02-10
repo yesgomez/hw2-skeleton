@@ -1,6 +1,8 @@
 from .utils import Atom, Residue, ActiveSite
 from prody import *
 import os
+import time
+import numpy as np
 import rdkit
 from rdkit import DataStructs
 from rdkit.Chem.Fingerprints import FingerprintMols
@@ -21,9 +23,10 @@ def compute_similarity(site_a, site_b):
     Input: two ActiveSite instances
     Output: the similarity between them (a floating point number)
     """
-    similarity = rdkit.DataStructs.FingerprintSimilarity(site_a, site_b, metric=DataStructs.DiceSimilarity)
+    tanSimilarity = rdkit.DataStructs.FingerprintSimilarity(site_a, site_b, metric=DataStructs.TanimotoSimilarity)
+    dicSimilarity = rdkit.DataStructs.FingerprintSimilarity(site_a, site_b, metric=DataStructs.DiceSimilarity)
     # print (similarity)
-    return similarity
+    return tanSimilarity, dicSimilarity
 
 
 def cluster_by_partitioning(k, active_sites):
@@ -35,43 +38,24 @@ def cluster_by_partitioning(k, active_sites):
             (this is really a list of clusters, each of which is list of
             ActiveSite instances)
     """
+    start = time.time()
     x = Kmeans(k, active_sites, 10, initialCentroids=None)
-    print (x)
-    return x
+    print ("Time taken:",time.time() - start)
+    print (len(x.centroidList), x.error)
+    print (Point(active_sites[0],2), Kmeans.getCentroid(x,Point(active_sites[0],2)))  
+    return x.error, x
 
-# def cluster_points(X, mu):
-#     clusters  = {}
-#     for x in X:
-#         bestmukey = min([(i[0], np.linalg.norm(x-mu[i[0]])) \
-#                     for i in enumerate(mu)], key=lambda t:t[1])[0]
-#         try:
-#             clusters[bestmukey].append(x)
-#         except KeyError:
-#             clusters[bestmukey] = [x]
-#     return clusters
- 
-# def reevaluate_centers(mu, clusters):
-#     newmu = []
-#     keys = sorted(clusters.keys())
-#     for k in keys:
-#         newmu.append(np.mean(clusters[k], axis = 0))
-#     return newmu
- 
-# def has_converged(mu, oldmu):
-#     return (set([tuple(a) for a in mu]) == set([tuple(a) for a in oldmu]))
-
-# def find_centers(X, K):
-#     # Initialize to K random centers
-#     oldmu = random.sample(X, K)
-#     mu = random.sample(X, K)
-#     while not has_converged(mu, oldmu):
-#         oldmu = mu
-#         # Assign all points in X to clusters
-#         clusters = cluster_points(X, mu)
-#         # Reevaluate centers
-#         mu = reevaluate_centers(oldmu, clusters)
-#     return(mu, clusters)
-    
+def return_clusters(kmeansobj, a_s):
+    no = len(kmeansobj.centroidList) # WE WERE ASSSUMING KMEANSOBJ = X BUT IT DOES NOT. WE NEED TO IMPORT X OR JUST COMBINE BOTH FUNCTIONS
+    clusters = []
+    for i in range(no):
+        clusters.append([])
+    for sites in a_s:
+        j = Kmeans.getCentroid(kmeansobj,Point(sites,2))
+        clusterid = j[0]
+        clusters[clusterid].append(sites)
+    print (len(clusters), len(clusters[-1]), len(clusterid))
+    return clusters
 
 def cluster_hierarchically(active_sites):
     """
