@@ -28,20 +28,21 @@ for i in range(len(fps)): # compute two distance metrics between all pairs of fi
 		simmatrix.append(list(compute_similarity(fps[i], fps[j])))
 print (len(simmatrix)) # 2x9316 matrix of unique (dist1, dist2) for 136 active site pdbs
 
+# Quality metric generation / testing
+strumatrix = sim_metric(files)
+
 # Choose clustering algorithm
 clusters = []
 if sys.argv[1][0:2] == '-P':
 	print("Clustering using Partitioning method")  # employing k-means as shown in kmeans.py
-	clusters = cluster_by_partitioning(simmatrix)
-	write_clustering(sys.argv[3], clusters)
+	clusters, ids = cluster_by_partitioning(simmatrix)
 	graph_clusters(clusters, 'Partitioning')
+	third_graph(ids, 'Partitioning', strumatrix)
+	write_clustering(sys.argv[3], clusters)
 
 if sys.argv[1][0:2] == '-H':
 	print("Clustering using Hierarchical method")
-	clusters = cluster_hierarchically(simmatrix)
+	clusters, ids = cluster_hierarchically(simmatrix)
+	graph_clusters(clusters, 'Hierarchical')
+	third_graph(ids, 'Hierarchical', strumatrix)
 	write_clustering(sys.argv[3], clusters)
-	# graph_clusters(clusters, 'Hierarchical')
-
-# Quality metric generation / testing
-strumatrix = sim_metric(files)
-third_graph(clusters, 'Hierarchical', strumatrix)

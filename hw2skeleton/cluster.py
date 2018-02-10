@@ -12,6 +12,7 @@ from scipy.spatial.distance import pdist
 from matplotlib import pyplot as plt
 from Bio.PDB import *
 from difflib import SequenceMatcher
+from mpl_toolkits.mplot3d import Axes3D
 from .kmeans import Point, Centroid, Kmeans, makeRandomPoint
 
 def make_fp(pdb):
@@ -30,7 +31,7 @@ def compute_similarity(site_a, site_b):
 	Output: the similarity between them (a floating point number)
 	"""
 	tanSimilarity = rdkit.DataStructs.FingerprintSimilarity(site_a, site_b, metric=DataStructs.TanimotoSimilarity)
-	dicSimilarity = rdkit.DataStructs.FingerprintSimilarity(site_a, site_b, metric=DataStructs.RusselSimilarity)
+	dicSimilarity = rdkit.DataStructs.FingerprintSimilarity(site_a, site_b, metric=DataStructs.AsymmetricSimilarity)
 	# can try [ TanimotoSimilarity, DiceSimilarity, CosineSimilarity, SokalSimilarity, *RusselSimilarity*, RogotGoldbergSimilarity,\
 	# AllBitSimilarity, KulczynskiSimilarity, McConnaugheySimilarity, *AsymmetricSimilarity*, BraunBlanquetSimilarity]
 	
@@ -56,14 +57,16 @@ def cluster_by_partitioning(active_sites):
 	num = len(bestclusters[1].centroidList)
 	print ("Lowest error was",bestclusters[0],"with",num,"clusters.")
 	sitelist = []
+	idlist = []
 	for i in range(int(num)):
 		sitelist.append([])
 	for sites in active_sites:
 		j = Kmeans.getCentroid(bestclusters[1],Point(sites,2))
 		clusterid = j[0] # 0 is cluster id, 1 is distance from centroid
 		sitelist[clusterid].append(sites)
+		idlist.append(clusterid)
 	print (len(sitelist),"clusters of varying sizes:", len(sitelist[0]),"~", len(sitelist[-1]))
-	return sitelist
+	return sitelist, idlist
 
 
 def cluster_hierarchically(active_sites):
@@ -95,12 +98,11 @@ def cluster_hierarchically(active_sites):
 	sitelist = []
 	for i in range(max(clusterids)+1): # we add 1 because the cluster ids are NOT zero indexed
 		sitelist.append([])
-	# for sites in active_sites:
 	for index, sites in enumerate(active_sites): # map cluster ids to active_site pairs
 		cid = clusterids[index] 
 		sitelist[cid].append(sites)
 	print (len(sitelist),"clusters of varying sizes:", len(sitelist[0]),"~", len(sitelist[-1]))
-	return sitelist
+	return sitelist, clusterids
 
 
 def graph_clusters(sl, type):
@@ -111,7 +113,7 @@ def graph_clusters(sl, type):
 		# for j in range(len(clusters)):
 	plt.title("%s Clustering" %(type))
 	plt.xlabel('Tanimoto Similarity')
-	plt.ylabel('Russel Similarity')
+	plt.ylabel('Asymmetric Similarity')
 	plt.legend()
 	plt.show()
 	
@@ -139,20 +141,18 @@ def sim_metric(files):
 			ratio = similar(strings[i], strings[j])
 			qualmatrix.append(ratio)
 	print(len(qualmatrix))
+	return qualmatrix
 
 
 def third_graph(sl, type, qualmatrix):
 	cm = matplotlib.cm.get_cmap('RdYlBu')
-	colors= qualmatrix
-	# xs, ys = zip(*sl)
+	z = []
+	for i in range(len(qualmatrix)):
+		z.append(qualmatrix[i]**2)
+	# z = qualmatrix
 	plt.figure(figsize=(10, 8))
-	for i in range(len(sl)):
-		cluster = sl[i]
-		xs, ys = zip(*cluster)
-		plt.Axes3D.scatter(xs, ys, zs=qualmatrix, zdir='z', s=20, c=colors)
-		# plt.plot(*zip(*cluster))
-	plt.colorbar(sc)
-	plt.title("%s Clustering" %(type))
-	plt.xlabel('Tanimoto Similarity')
-	plt.ylabel('Russel Similarity')
+	plt.scatter(sl, qualmatrix, s=None, c=z, marker='o', cmap=cm)
+	plt.xlabel('cluster ID')
+	plt.ylabel('sequence similarity')
+	plt.title("%s Clustering vs Sequence" %(type))
 	plt.show()
