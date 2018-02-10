@@ -4,7 +4,7 @@ from operator import itemgetter
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
 from .io import read_active_sites, write_clustering, write_mult_clusterings
-from .cluster import cluster_by_partitioning, cluster_hierarchically, compute_similarity, make_fp, graph_clusters
+from .cluster import cluster_by_partitioning, cluster_hierarchically, compute_similarity, make_fp, graph_clusters, sim_metric, third_graph
 from .kmeans import Point, Centroid, Kmeans, makeRandomPoint
 
 
@@ -14,7 +14,6 @@ if len(sys.argv) < 4:
 	sys.exit(0)
 
 # active_sites = read_active_sites(sys.argv[2])
-
 files = glob.glob('./data/*.pdb') # make list of pdbs
 fps = []
 for file in files: # make fingerprints from pdb list
@@ -29,7 +28,6 @@ for i in range(len(fps)): # compute two distance metrics between all pairs of fi
 		simmatrix.append(list(compute_similarity(fps[i], fps[j])))
 print (len(simmatrix)) # 2x9316 matrix of unique (dist1, dist2) for 136 active site pdbs
 
-
 # Choose clustering algorithm
 clusters = []
 if sys.argv[1][0:2] == '-P':
@@ -42,4 +40,8 @@ if sys.argv[1][0:2] == '-H':
 	print("Clustering using Hierarchical method")
 	clusters = cluster_hierarchically(simmatrix)
 	write_clustering(sys.argv[3], clusters)
-	graph_clusters(clusters, 'Hierarchical')
+	# graph_clusters(clusters, 'Hierarchical')
+
+# Quality metric generation / testing
+strumatrix = sim_metric(files)
+third_graph(clusters, 'Hierarchical', strumatrix)
