@@ -20,7 +20,7 @@ def test_similarity():
     assert cluster.compute_similarity(activesite_a, activesite_b)
     # assert cluster.compute_similarity(filename_a, filename_b) == 0.0
 
-def test_partition_clustering():
+# def test_partition_clustering():
     # tractable subset
     # pdb_ids = [276, 4629, 10701]
 
@@ -32,7 +32,7 @@ def test_partition_clustering():
     # # update this assertion
     # assert cluster.cluster_by_partitioning(active_sites) == []
 
-def test_hierarchical_clustering():
+# def test_hierarchical_clustering():
     # tractable subset
     # pdb_ids = [276, 4629, 10701]
 

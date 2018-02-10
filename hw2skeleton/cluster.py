@@ -1,5 +1,4 @@
 from .utils import Atom, Residue, ActiveSite
-from prody import *
 from operator import itemgetter
 import os
 import time
@@ -7,6 +6,8 @@ import numpy as np
 import rdkit
 from rdkit import DataStructs
 from rdkit.Chem.Fingerprints import FingerprintMols
+from scipy.cluster.hierarchy import dendrogram, linkage, cophenet
+from scipy.spatial.distance import pdist
 from .kmeans import Point, Centroid, Kmeans, makeRandomPoint
 
 def make_fp(pdb):
@@ -40,7 +41,7 @@ def cluster_by_partitioning(active_sites):
             ActiveSite instances)
     """
     clusters = []
-    for k in range(2,20): # intialize with different values of k
+    for k in range(2,100): # intialize with different values of k
         start = time.time()
         x = Kmeans(k, active_sites, 10, initialCentroids=None)
         print ("Time taken:",time.time() - start)
@@ -55,9 +56,7 @@ def cluster_by_partitioning(active_sites):
         j = Kmeans.getCentroid(bestclusters[1],Point(sites,2))
         clusterid = j[0] # 0 is cluster id, 1 is distance from centroid
         sitelist[clusterid].append(sites)
-    # print (Point(active_sites[0],2), Kmeans.getCentroid(x,Point(active_sites[0],2))) 
-    # return x
-    print (len(sitelist), len(sitelist[0]), len(sitelist[-1]))
+    print (len(sitelist),"clusters of varying sizes:", len(sitelist[0]),"~", len(sitelist[-1]))
     return sitelist
 
 def cluster_hierarchically(active_sites):
@@ -68,6 +67,11 @@ def cluster_hierarchically(active_sites):
     Output: a list of clusterings
             (each clustering is a list of lists of Sequence objects)
     """
-
+    # clusters = linkage(active_sites, 'average', 'braycurtis') # scipy has several dist metrics/linkage methods and I thought this one was best after testing based on c->1
+    metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
+    for metric in metrics:
+        clusters = linkage(active_sites, 'average', metric)
+        c, coph_dists = cophenet(clusters, pdist(active_sites))
+        print (metric, len(clusters), c)
     return []
 

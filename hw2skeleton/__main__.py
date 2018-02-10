@@ -11,7 +11,6 @@ if len(sys.argv) < 4:
 	print("Usage: python -m hw2skeleton [-P| -H] <pdb directory> <output file>")
 	sys.exit(0)
 
-
 # active_sites = read_active_sites(sys.argv[2])
 
 files = glob.glob('./data/*.pdb') # make list of pdbs
@@ -40,5 +39,5 @@ if sys.argv[1][0:2] == '-P':
 
 if sys.argv[1][0:2] == '-H':
 	print("Clustering using Hierarchical method")
-	clusterings = cluster_hierarchically(active_sites)
-	write_mult_clusterings(sys.argv[3], clusterings)
+	clusterings = cluster_hierarchically(simmatrix)
+	# write_mult_clusterings(sys.argv[3], clusters)
