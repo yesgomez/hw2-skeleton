@@ -1,13 +1,14 @@
 from .utils import Atom, Residue, ActiveSite
-from operator import itemgetter
 import os
 import time
 import numpy as np
 import rdkit
 from rdkit import DataStructs
 from rdkit.Chem.Fingerprints import FingerprintMols
-from scipy.cluster.hierarchy import dendrogram, linkage, cophenet
+from operator import itemgetter
+from scipy.cluster.hierarchy import dendrogram, linkage, cophenet, fcluster
 from scipy.spatial.distance import pdist
+from matplotlib import pyplot as plt
 from .kmeans import Point, Centroid, Kmeans, makeRandomPoint
 
 def make_fp(pdb):
@@ -41,7 +42,7 @@ def cluster_by_partitioning(active_sites):
             ActiveSite instances)
     """
     clusters = []
-    for k in range(2,100): # intialize with different values of k
+    for k in range(2,102): # intialize with different values of k
         start = time.time()
         x = Kmeans(k, active_sites, 10, initialCentroids=None)
         print ("Time taken:",time.time() - start)
@@ -59,19 +60,52 @@ def cluster_by_partitioning(active_sites):
     print (len(sitelist),"clusters of varying sizes:", len(sitelist[0]),"~", len(sitelist[-1]))
     return sitelist
 
+
 def cluster_hierarchically(active_sites):
     """
-    Cluster the given set of ActiveSite instances using a hierarchical algorithm.                                                                  #
+    Cluster the given set of ActiveSite instances using a hierarchical algorithm.                                                                  
 
     Input: a list of ActiveSite instances
     Output: a list of clusterings
             (each clustering is a list of lists of Sequence objects)
     """
-    # clusters = linkage(active_sites, 'average', 'braycurtis') # scipy has several dist metrics/linkage methods and I thought this one was best after testing based on c->1
-    metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
-    for metric in metrics:
-        clusters = linkage(active_sites, 'average', metric)
-        c, coph_dists = cophenet(clusters, pdist(active_sites))
-        print (metric, len(clusters), c)
-    return []
+    Z = linkage(active_sites, 'average', 'euclidean') # scipy has several dist metrics/linkage methods which I compared based on c->1
+ 
+    # metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
+    # methods = ['single', 'complete', 'average', 'weighted', 'ward']
+    # for method in methods:
+    #     Z = linkage(active_sites, method)
+    #     c, coph_dists = cophenet(Z, pdist(active_sites))
+    #     print (method, c)
+    # for i in range(len(Z)):
+    #     j = 0
+    #     if Z[i][2] > j:
+    #         j = Z[i][2]
+    #         print (j)
+    #     else:
+    #         j = j
+
+    max_d = 0.1 # determined by manually comparing delta(distances)
+    clusterids = fcluster(Z, max_d, criterion='distance')
+    sitelist = []
+    for i in range(max(clusterids)+1): # we add 1 because the cluster ids are NOT zero indexed
+        sitelist.append([])
+    # for sites in active_sites:
+    for index, sites in enumerate(active_sites): # map cluster ids to active_site pairs
+        cid = clusterids[index] 
+        sitelist[cid].append(sites)
+    print (len(sitelist),"clusters of varying sizes:", len(sitelist[0]),"~", len(sitelist[-1]))
+    return sitelist
+
+
+def graph_clusters(sl, type):
+    plt.figure(figsize=(10, 8))
+    for i in range(len(sl)):
+        cluster = sl[i]
+        plt.plot(*zip(*cluster), marker='o')
+        # for j in range(len(clusters)):
+    plt.title("%s Clustering" %(type))
+    plt.xlabel('Tanimoto Similarity')
+    plt.ylabel('Dice Similarity')
+    plt.show()
 

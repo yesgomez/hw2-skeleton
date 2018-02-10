@@ -1,8 +1,10 @@
 import sys
 import glob
 from operator import itemgetter
+from matplotlib import pyplot as plt
+from scipy.cluster.hierarchy import dendrogram
 from .io import read_active_sites, write_clustering, write_mult_clusterings
-from .cluster import cluster_by_partitioning, cluster_hierarchically, compute_similarity, make_fp
+from .cluster import cluster_by_partitioning, cluster_hierarchically, compute_similarity, make_fp, graph_clusters
 from .kmeans import Point, Centroid, Kmeans, makeRandomPoint
 
 
@@ -22,12 +24,10 @@ print (len(fps))
 
 simmatrix = []
 for i in range(len(fps)): # compute two distance metrics between all pairs of fingerprints (n^2)
-	# simtemp = []
-	for j in range(len(fps)):
+	# j = i + 1
+	for j in range(i, len(fps)):
 		simmatrix.append(list(compute_similarity(fps[i], fps[j])))
-	# simmatrix.append(simtemp)
-	# print (simtemp[0])
-print (len(simmatrix)) # 2x18496 matrix of (dist1, dist2) for 136 active site pdbs
+print (len(simmatrix)) # 2x9316 matrix of unique (dist1, dist2) for 136 active site pdbs
 
 
 # Choose clustering algorithm
@@ -35,9 +35,11 @@ clusters = []
 if sys.argv[1][0:2] == '-P':
 	print("Clustering using Partitioning method")  # employing k-means as shown in kmeans.py
 	clusters = cluster_by_partitioning(simmatrix)
-	# write_clustering(sys.argv[3], clusters)
+	write_clustering(sys.argv[3], clusters)
+	graph_clusters(clusters, 'Partitioning')
 
 if sys.argv[1][0:2] == '-H':
 	print("Clustering using Hierarchical method")
-	clusterings = cluster_hierarchically(simmatrix)
-	# write_mult_clusterings(sys.argv[3], clusters)
+	clusters = cluster_hierarchically(simmatrix)
+	write_clustering(sys.argv[3], clusters)
+	graph_clusters(clusters, 'Hierarchical')
