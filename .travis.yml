@@ -19,7 +19,7 @@ python:
 branches:
     only:
         - master
-
+        - redo
 # install dependencies listed in requirements
 install: "pip install -r requirements.txt"
 
