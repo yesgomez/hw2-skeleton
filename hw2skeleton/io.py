@@ -1,3 +1,4 @@
+import numpy as np
 import glob
 import os
 from .utils import Atom, Residue, ActiveSite
@@ -69,7 +70,7 @@ def read_active_site(filepath):
     return active_site
 
 
-def write_clustering(filename, clusters):
+def write_clustering(filename, clusters, ids):
     """
     Write the clustered ActiveSite instances out to a file.
 
@@ -78,12 +79,13 @@ def write_clustering(filename, clusters):
     """
 
     out = open(filename, 'w')
-
+    np.set_printoptions(threshold=np.inf)
     for i in range(len(clusters)):
         out.write("\nCluster %d\n--------------\n" % i)
         for j in range(len(clusters[i])):
             out.write("%s\n" % clusters[i][j])
-
+    out.write("\nCluster ID Matrix\n")
+    out.write("%s\n" % ids)
     out.close()
 
 

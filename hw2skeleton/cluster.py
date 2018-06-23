@@ -1,5 +1,4 @@
 from .utils import Atom, Residue, ActiveSite
-import os
 import time
 import numpy as np
 import rdkit
@@ -77,7 +76,7 @@ def cluster_hierarchically(active_sites):
 	Output: a list of clusterings
 			(each clustering is a list of lists of Sequence objects)
 	"""
-	Z = linkage(active_sites, 'average', 'euclidean') # scipy has several dist metrics/linkage methods which I compared based on c->1
+	Z = linkage(active_sites, 'average', 'euclidean') # scipy has several dist metrics/linkage methods which I ranked based on c->1
  
 	# metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
 	# methods = ['single', 'complete', 'average', 'weighted', 'ward']
@@ -156,3 +155,4 @@ def third_graph(sl, type, qualmatrix):
 	plt.ylabel('sequence similarity')
 	plt.title("%s Clustering vs Sequence" %(type))
 	plt.show()
+

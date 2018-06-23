@@ -1,5 +1,7 @@
 import sys
 import glob
+import numpy
+from rdkit import DataStructs
 from operator import itemgetter
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
@@ -13,13 +15,20 @@ if len(sys.argv) < 4:
 	print("Usage: python -m hw2skeleton [-P| -H] <pdb directory> <output file>")
 	sys.exit(0)
 
-# active_sites = read_active_sites(sys.argv[2])
-files = glob.glob('./data/*.pdb') # make list of pdbs
+# mkae list of pdbs
+files = glob.glob('./data/*.pdb') 
 fps = []
-for file in files: # make fingerprints from pdb list
+# make fingerprints from pdb list
+for file in files: 
 	fp = make_fp(file)
 	fps.append(fp)
-print (len(fps))
+# convert the RDKit explicit vectors into numpy arrays
+np_fps = []
+for fp in fps:
+  arr = numpy.zeros((1,))
+  DataStructs.ConvertToNumpyArray(fp, arr)
+  np_fps.append(arr)
+print (len(fps), len(np_fps))
 
 simmatrix = []
 for i in range(len(fps)): # compute two distance metrics between all pairs of fingerprints (n^2)
@@ -30,6 +39,7 @@ print (len(simmatrix)) # 2x9316 matrix of unique (dist1, dist2) for 136 active s
 
 # Quality metric generation / testing
 strumatrix = sim_metric(files)
+print (strumatrix)
 
 # Choose clustering algorithm
 clusters = []
@@ -38,11 +48,12 @@ if sys.argv[1][0:2] == '-P':
 	clusters, ids = cluster_by_partitioning(simmatrix)
 	graph_clusters(clusters, 'Partitioning')
 	third_graph(ids, 'Partitioning', strumatrix)
-	write_clustering(sys.argv[3], clusters)
+	write_clustering(sys.argv[3], clusters, ids)
 
 if sys.argv[1][0:2] == '-H':
 	print("Clustering using Hierarchical method")
 	clusters, ids = cluster_hierarchically(simmatrix)
 	graph_clusters(clusters, 'Hierarchical')
 	third_graph(ids, 'Hierarchical', strumatrix)
-	write_clustering(sys.argv[3], clusters)
+	write_clustering(sys.argv[3], clusters, list(ids))
+
