@@ -12,13 +12,14 @@ import heapq
 import itertools
 import random
 import bisect 
-
+# dim, 
 class Point:
-	def __init__(self,p,dim,id=-1):
+	def __init__(self,p,id=-1):
 		self.coordinates = []
 		self.pointList = []
 		self.id = id
 		self.pointCentroid = 0
+		dim=len(p) # this should always equal self.dim (kind of a self check)
 		for x in range(0,dim):
 			self.coordinates.append(p[x]);
 		self.centroid = None
@@ -58,7 +59,7 @@ class Kmeans:
 		self.errorList = []
 		i = 0
 		for point in pointList:
-			p = Point(point,self.dim,i)
+			p = Point(point,i)
 			i += 1
 			self.pointList.append(p)
 

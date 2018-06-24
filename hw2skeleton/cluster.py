@@ -17,7 +17,7 @@ from .kmeans import Point, Centroid, Kmeans, makeRandomPoint
 def make_fp(pdb):
 	# converts given pdb to mol object for rdkit use
 	site = rdkit.Chem.rdmolfiles.MolFromPDBFile(pdb, sanitize=False, removeHs=False)
-	fp = FingerprintMols.FingerprintMol(site)
+	fp = FingerprintMols.FingerprintMol(site, minPath=1, maxPath=7, fpSize=1028, bitsPerHash=2, useHs=True, tgtDensity=0.0, minSize=256)
 	print (fp)
 	return fp
 
@@ -108,6 +108,7 @@ def graph_clusters(sl, type):
 	plt.figure(figsize=(10, 8))
 	for i in range(len(sl)):
 		cluster = sl[i]
+		print (len(cluster))
 		plt.plot(*zip(*cluster), marker='o')
 		# for j in range(len(clusters)):
 	plt.title("%s Clustering" %(type))
@@ -139,7 +140,7 @@ def sim_metric(files):
 		for j in range(i, len(strings)):
 			ratio = similar(strings[i], strings[j])
 			qualmatrix.append(ratio)
-	print(len(qualmatrix))
+	# print(len(qualmatrix))
 	return qualmatrix
 
 
