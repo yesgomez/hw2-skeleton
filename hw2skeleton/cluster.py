@@ -53,19 +53,22 @@ def cluster_by_partitioning(active_sites):
 		print ("Time taken:",time.time() - start)
 		clusters.append((x.error, x))
 	bestclusters = min(clusters,key=itemgetter(0)) # choose the value of k that gives the lowest error
-	num = len(bestclusters[1].centroidList)
-	print ("Lowest error was",bestclusters[0],"with",num,"clusters.")
+	num = bestclusters[1].centroidList
+	print ("Lowest error was",bestclusters[0],"with",len(num),"clusters.")
 	sitelist = []
 	idlist = []
-	for i in range(int(num)):
+	centlist = []
+	for i in range(int(len(num))):
 		sitelist.append([])
+		centlist.append(num[i].point.coordinates)
 	for sites in active_sites:
 		j = Kmeans.getCentroid(bestclusters[1],Point(sites,2))
 		clusterid = j[0] # 0 is cluster id, 1 is distance from centroid
+		distid = j[1]
 		sitelist[clusterid].append(sites)
 		idlist.append(clusterid)
-	print (len(sitelist),"clusters of varying sizes:", len(sitelist[0]),"~", len(sitelist[-1]))
-	return sitelist, idlist
+	print (len(sitelist),"clusters of varying sizes.\n", len(centlist))
+	return sitelist, idlist, centlist
 
 
 def cluster_hierarchically(active_sites):
@@ -100,8 +103,8 @@ def cluster_hierarchically(active_sites):
 	for index, sites in enumerate(active_sites): # map cluster ids to active_site pairs
 		cid = clusterids[index] 
 		sitelist[cid].append(sites)
-	print (len(sitelist),"clusters of varying sizes:", len(sitelist[0]),"~", len(sitelist[-1]))
-	return sitelist, clusterids
+	print (len(sitelist),"clusters of varying sizes.")
+	return sitelist, clusterids, Z
 
 
 def graph_clusters(sl, type):
@@ -157,3 +160,14 @@ def third_graph(sl, type, qualmatrix):
 	plt.title("%s Clustering vs Sequence" %(type))
 	plt.show()
 
+def matrix_graph(centroidarr):
+	ca = np.array(centroidarr)
+	plt.matshow(ca, fignum=100, cmap=plt.cm.Greys)
+	plt.title("Visual Representation of All %s Centroids (in 1028 dim)" %len(centroidarr))
+	plt.show()
+	
+def dendrogram_graph(Z):
+	plt.figure()
+	dn = dendrogram(Z, above_threshold_color='y',orientation='top')
+	plt.show()
+	

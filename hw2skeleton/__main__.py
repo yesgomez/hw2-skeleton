@@ -6,7 +6,7 @@ from operator import itemgetter
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
 from .io import read_active_sites, write_clustering, write_mult_clusterings
-from .cluster import cluster_by_partitioning, cluster_hierarchically, compute_similarity, make_fp, graph_clusters, sim_metric, third_graph
+from .cluster import cluster_by_partitioning, cluster_hierarchically, compute_similarity, make_fp, graph_clusters, sim_metric, third_graph, matrix_graph, dendrogram_graph
 from .kmeans import Point, Centroid, Kmeans, makeRandomPoint
 
 
@@ -47,17 +47,19 @@ strumatrix = sim_metric(files)
 clusters = []
 if sys.argv[1][0:2] == '-P':
 	print("Clustering using Partitioning method")  # employing k-means as shown in kmeans.py
+	clusters, ids, centroids = cluster_by_partitioning(np_fps)
 	# clusters, ids = cluster_by_partitioning(simmatrix)
-	# SO CRAZY IT JUST MIGHT WORK
-	clusters, ids = cluster_by_partitioning(np_fps)
-	graph_clusters(clusters, 'Partitioning')
-	third_graph(ids, 'Partitioning', strumatrix)
+	# graph_clusters(clusters, 'Partitioning')
+	# third_graph(ids, 'Partitioning', strumatrix)
+	matrix_graph(centroids)
 	write_clustering(sys.argv[3], clusters, ids)
 
 if sys.argv[1][0:2] == '-H':
 	print("Clustering using Hierarchical method")
-	clusters, ids = cluster_hierarchically(simmatrix)
-	graph_clusters(clusters, 'Hierarchical')
-	third_graph(ids, 'Hierarchical', strumatrix)
+	clusters, ids, Z = cluster_hierarchically(np_fps)
+	# clusters, ids = cluster_hierarchically(simmatrix)
+	# graph_clusters(clusters, 'Hierarchical')
+	# third_graph(ids, 'Hierarchical', strumatrix)
+	dendrogram_graph(Z)
 	write_clustering(sys.argv[3], clusters, list(ids))
 
