@@ -62,4 +62,5 @@ if sys.argv[1][0:2] == '-H':
 
 if sys.argv[1][0:2] == '-H':
 	print("Generating cluster comparison graphs")
+	matrix_graph(centroids, kmeans)
 	
