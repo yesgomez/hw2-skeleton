@@ -12,7 +12,7 @@ from .kmeans import Point, Centroid, Kmeans, makeRandomPoint
 
 # Some quick stuff to make sure the program is called correctly
 if len(sys.argv) < 4:
-	print("Usage: python -m hw2skeleton [-P| -H] <pdb directory> <output file>")
+	print("Usage: python -m hw2skeleton [-P| -H] <pdb directory> <output file> [# of P clusters for H]")
 	sys.exit(0)
 
 # make list of pdbs
@@ -40,26 +40,26 @@ print (len(fps), len(np_fps), np_fps[0])
 # print (len(simmatrix)) # 2x9316 matrix of unique (dist1, dist2) for 136 active site pdbs
 
 # Quality metric generation / testing
-strumatrix = sim_metric(files)
-# print (strumatrix)
+seqSimMatrix = sim_metric(files)
 
 # Choose clustering algorithm
 clusters = []
 if sys.argv[1][0:2] == '-P':
 	print("Clustering using Partitioning method")  # employing k-means as shown in kmeans.py
 	clusters, ids, centroids = cluster_by_partitioning(np_fps)
-	# clusters, ids = cluster_by_partitioning(simmatrix)
+	matrix_graph(centroids, kmeans)
 	# graph_clusters(clusters, 'Partitioning')
-	# third_graph(ids, 'Partitioning', strumatrix)
-	matrix_graph(centroids)
+	# third_graph(ids, 'Partitioning', seqSimMatrix)
 	write_clustering(sys.argv[3], clusters, ids)
 
 if sys.argv[1][0:2] == '-H':
 	print("Clustering using Hierarchical method")
 	clusters, ids, Z = cluster_hierarchically(np_fps)
-	# clusters, ids = cluster_hierarchically(simmatrix)
-	# graph_clusters(clusters, 'Hierarchical')
-	# third_graph(ids, 'Hierarchical', strumatrix)
 	dendrogram_graph(Z)
+	# graph_clusters(clusters, 'Hierarchical')
+	# third_graph(ids, 'Hierarchical', seqSimMatrix)
 	write_clustering(sys.argv[3], clusters, list(ids))
 
+if sys.argv[1][0:2] == '-H':
+	print("Generating cluster comparison graphs")
+	

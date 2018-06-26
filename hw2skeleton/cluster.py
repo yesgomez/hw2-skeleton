@@ -17,7 +17,7 @@ from .kmeans import Point, Centroid, Kmeans, makeRandomPoint
 def make_fp(pdb):
 	# converts given pdb to mol object for rdkit use
 	site = rdkit.Chem.rdmolfiles.MolFromPDBFile(pdb, sanitize=False, removeHs=False)
-	fp = FingerprintMols.FingerprintMol(site, minPath=1, maxPath=7, fpSize=1028, bitsPerHash=2, useHs=True, tgtDensity=0.0, minSize=256)
+	fp = FingerprintMols.FingerprintMol(site, minPath=1, maxPath=7, fpSize=1024, bitsPerHash=2, useHs=True, tgtDensity=0.0, minSize=256)
 	print (fp)
 	return fp
 
@@ -67,7 +67,11 @@ def cluster_by_partitioning(active_sites):
 		distid = j[1]
 		sitelist[clusterid].append(sites)
 		idlist.append(clusterid)
-	print (len(sitelist),"clusters of varying sizes.\n", len(centlist))
+	for c, csite in enumerate(sitelist): # check for empty clusters
+		if not csite:
+			sitelist.remove(csite)
+			centlist.remove(centlist[c])
+	print (len(sitelist),"clusters of varying sizes.", len(centlist))
 	return sitelist, idlist, centlist
 
 
@@ -79,31 +83,28 @@ def cluster_hierarchically(active_sites):
 	Output: a list of clusterings
 			(each clustering is a list of lists of Sequence objects)
 	"""
-	Z = linkage(active_sites, 'average', 'euclidean') # scipy has several dist metrics/linkage methods which I ranked based on c->1
- 
+	
+	Z = linkage(active_sites, 'average', 'euclidean') 
+	# scipy has several dist metrics/linkage methods which I ranked based on c->1 to choose this one ^^
 	# metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
 	# methods = ['single', 'complete', 'average', 'weighted', 'ward']
-	# for method in methods:
-	#     Z = linkage(active_sites, method)
-	#     c, coph_dists = cophenet(Z, pdist(active_sites))
-	#     print (method, c)
-	# for i in range(len(Z)):
-	#     j = 0
-	#     if Z[i][2] > j:
-	#         j = Z[i][2]
-	#         print (j)
-	#     else:
-	#         j = j
 
-	max_d = 0.1 # determined by manually comparing delta(distances)
-	clusterids = fcluster(Z, max_d, criterion='distance')
+	# Max Distance method
+	# max_d = 1.0 # determined by looking at dendrogram
+	# clusterids = fcluster(Z, max_d, criterion='distance'x)
+	# Known Clusters method
+	k = int(sys.argv[4]) # input("How many clusters do I have?").strip()
+	clusterids = fcluster(Z, k, criterion='maxclust')
 	sitelist = []
 	for i in range(max(clusterids)+1): # we add 1 because the cluster ids are NOT zero indexed
 		sitelist.append([])
 	for index, sites in enumerate(active_sites): # map cluster ids to active_site pairs
 		cid = clusterids[index] 
 		sitelist[cid].append(sites)
-	print (len(sitelist),"clusters of varying sizes.")
+	for c, csite in enumerate(sitelist): # check for empty clusters
+		if not csite:
+			sitelist.remove(csite)
+	print (len(sitelist),"clusters of varying sizes.", clusterids)
 	return sitelist, clusterids, Z
 
 
@@ -147,27 +148,48 @@ def sim_metric(files):
 	return qualmatrix
 
 
-def third_graph(sl, type, qualmatrix):
+def third_graph(idlist, type, qualmatrix):
 	cm = matplotlib.cm.get_cmap('RdYlBu')
 	z = []
 	for i in range(len(qualmatrix)):
 		z.append(qualmatrix[i]**2)
-	# z = qualmatrix
 	plt.figure(figsize=(10, 8))
-	plt.scatter(sl, qualmatrix, s=None, c=z, marker='o', cmap=cm)
+	plt.scatter(idlist, qualmatrix, s=None, c=z, marker='o', cmap=cm)
 	plt.xlabel('cluster ID')
 	plt.ylabel('sequence similarity')
 	plt.title("%s Clustering vs Sequence" %(type))
 	plt.show()
 
-def matrix_graph(centroidarr):
+def matrix_graph(centroidarr, subtype):
 	ca = np.array(centroidarr)
-	plt.matshow(ca, fignum=100, cmap=plt.cm.Greys)
-	plt.title("Visual Representation of All %s Centroids (in 1028 dim)" %len(centroidarr))
+	if subtype = "kmeans":
+		cm = plt.cm.Greys
+		title = "Visual Representation of All %s Centroids (in 1024 dim)" %len(centroidarr)
+		xl = 'Position of coordinate for given cluster centroid'
+		yl = 'Centroid index'
+	elif subtype = "clustercomp":
+		cm = plt.cm.PuBu
+		title = "Comparing Clusters by membership and sequence similarity"
+		xl = 'K-means Cluster ID'
+		yl = 'Hierarchical Cluster ID'
+	else:
+		print ("Sorry, not a proper subtype. Try kmeans or clustercomp instead.\n")
+	plt.matshow(ca, fignum=100, aspect='auto', cmap=cm)
+	plt.title(title)
+	plt.xlabel(xl)
+	plt.ylabel(yl)
 	plt.show()
 	
 def dendrogram_graph(Z):
 	plt.figure()
-	dn = dendrogram(Z, above_threshold_color='y',orientation='top')
+	dn = dendrogram(Z, above_threshold_color='y',orientation='top', leaf_font_size=7.5)
+	plt.title("Dendrogram showing relations between clusters")
 	plt.show()
-	
+
+# def x(idlist, type, qualmatrix):
+	# COMBINE THE IDLIST WITH THE QUAL MATRIX AS DICT OR SUMTHIN
+	# SEPARATE INTO SUBLISTS - ONE SUBLIST PER CLUSTER CONTAINING A BUNCH OF (CLUSTERID, SEQSIM_AB) POINTS
+	# INITIALIZE FIGURE
+	# RUN third_graph ONL EACH OF THESE LISTS, BUT MAKE THEM SUBPLOTS
+	# WHEN DONE SHOW WHOLE THING AS ONE PLOT
+	# COLOR NOT NEEDED SINCE WE ELIMINATED ONE OF THE AXES BY SPLITTING THE DATA UP 
