@@ -1,9 +1,7 @@
 from .utils import Atom, Residue, ActiveSite
-import time
+import sys #, time
 import numpy as np
-import rdkit
-import matplotlib
-from rdkit import DataStructs
+from rdkit import DataStructs, Chem
 from rdkit.Chem.Fingerprints import FingerprintMols
 from operator import itemgetter
 from scipy.cluster.hierarchy import dendrogram, linkage, cophenet, fcluster
@@ -11,12 +9,13 @@ from scipy.spatial.distance import pdist
 from matplotlib import pyplot as plt
 from Bio.PDB import *
 from difflib import SequenceMatcher
-from mpl_toolkits.mplot3d import Axes3D
 from .kmeans import Point, Centroid, Kmeans, makeRandomPoint
+from sklearn import metrics
+# from sklearn.metrics import pairwise_distances
 
 def make_fp(pdb):
 	# converts given pdb to mol object for rdkit use
-	site = rdkit.Chem.rdmolfiles.MolFromPDBFile(pdb, sanitize=False, removeHs=False)
+	site = Chem.rdmolfiles.MolFromPDBFile(pdb, sanitize=False, removeHs=False)
 	fp = FingerprintMols.FingerprintMol(site, minPath=1, maxPath=7, fpSize=1024, bitsPerHash=2, useHs=True, tgtDensity=0.0, minSize=256)
 	print (fp)
 	return fp
@@ -48,9 +47,9 @@ def cluster_by_partitioning(active_sites):
 	"""
 	clusters = []
 	for k in range(2,52): # intialize with different values of k
-		start = time.time()
+		# start = time.time()
 		x = Kmeans(k, active_sites, 10, initialCentroids=None)
-		print ("Time taken:",time.time() - start)
+		# print ("Time taken:",time.time() - start)
 		clusters.append((x.error, x))
 	bestclusters = min(clusters,key=itemgetter(0)) # choose the value of k that gives the lowest error
 	num = bestclusters[1].centroidList
@@ -84,16 +83,14 @@ def cluster_hierarchically(active_sites):
 			(each clustering is a list of lists of Sequence objects)
 	"""
 	
+	# scipy has several dist metrics/linkage methods which I ranked based on c->1 to choose this one:
 	Z = linkage(active_sites, 'average', 'euclidean') 
-	# scipy has several dist metrics/linkage methods which I ranked based on c->1 to choose this one ^^
-	# metrics = ['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 'yule']
-	# methods = ['single', 'complete', 'average', 'weighted', 'ward']
 
 	# Max Distance method
 	# max_d = 1.0 # determined by looking at dendrogram
 	# clusterids = fcluster(Z, max_d, criterion='distance'x)
-	# Known Clusters method
-	k = int(sys.argv[4]) # input("How many clusters do I have?").strip()
+	# Known No. of Clusters method
+	k = int(sys.argv[4]) 
 	clusterids = fcluster(Z, k, criterion='maxclust')
 	sitelist = []
 	for i in range(max(clusterids)+1): # we add 1 because the cluster ids are NOT zero indexed
@@ -120,11 +117,10 @@ def graph_clusters(sl, type):
 	plt.ylabel('Asymmetric Similarity')
 	plt.legend()
 	plt.show()
-	
-	
+
+
 def similar(a, b):
 	return SequenceMatcher(None, a, b).ratio()
-
 
 def sim_metric(files):
 	strings = []
@@ -135,61 +131,61 @@ def sim_metric(files):
 		structure=p.get_structure('FILE', file)
 		for model in structure:
 			for residue in model.get_residues():
-				# print (residue)
 				if residue.get_resname() in aa:
 					struct += str(aa[residue.get_resname()])
 		strings.append(struct)
 	qualmatrix = []
 	for i in range(len(strings)): # compute two distance metrics between all pairs of sequences (n^2)
-		for j in range(i, len(strings)):
+		for j in range(len(strings)):
 			ratio = similar(strings[i], strings[j])
 			qualmatrix.append(ratio)
-	# print(len(qualmatrix))
+	print(len(qualmatrix))
 	return qualmatrix
 
 
-def third_graph(idlist, type, qualmatrix):
-	cm = matplotlib.cm.get_cmap('RdYlBu')
-	z = []
-	for i in range(len(qualmatrix)):
-		z.append(qualmatrix[i]**2)
+def third_graph(data, labels, gtype):
+	# Using sequence similarity as distance
+	avgscore = metrics.silhouette_score(data, labels, metric='euclidean')
+	print ("Average silhouette score for %s was %s." %(gtype, avgscore))
+	silscores = metrics.silhouette_samples(data, labels, metric='euclidean')
+
+	# z = []
+	# for i in range(len(qualmatrix)):
+	# 	z.append(qualmatrix[i]**2)
+	# cm = matplotlib.cm.get_cmap('RdYlBu')
 	plt.figure(figsize=(10, 8))
-	plt.scatter(idlist, qualmatrix, s=None, c=z, marker='o', cmap=cm)
+	plt.scatter(labels, silscores, s=None, marker='o') #, c=labels, cmap=cm)
 	plt.xlabel('cluster ID')
-	plt.ylabel('sequence similarity')
-	plt.title("%s Clustering vs Sequence" %(type))
+	plt.ylabel('Silhouette score')
+	plt.title("%s Clustering vs Sequence" %gtype)
 	plt.show()
 
-def matrix_graph(centroidarr, subtype):
+	# return silscores
+
+	
+def matrix_graph(centroidarr, gtype):
 	ca = np.array(centroidarr)
-	if subtype = "kmeans":
+	if gtype == "kmeans":
 		cm = plt.cm.Greys
 		title = "Visual Representation of All %s Centroids (in 1024 dim)" %len(centroidarr)
 		xl = 'Position of coordinate for given cluster centroid'
 		yl = 'Centroid index'
-	elif subtype = "clustercomp":
+	elif gtype == "clustercomp":
 		cm = plt.cm.PuBu
 		title = "Comparing Clusters by membership and sequence similarity"
 		xl = 'K-means Cluster ID'
 		yl = 'Hierarchical Cluster ID'
 	else:
-		print ("Sorry, not a proper subtype. Try kmeans or clustercomp instead.\n")
+		print ("Sorry, not a proper graph type. Try kmeans or clustercomp instead.\n")
 	plt.matshow(ca, fignum=100, aspect='auto', cmap=cm)
 	plt.title(title)
 	plt.xlabel(xl)
 	plt.ylabel(yl)
 	plt.show()
+
 	
 def dendrogram_graph(Z):
 	plt.figure()
 	dn = dendrogram(Z, above_threshold_color='y',orientation='top', leaf_font_size=7.5)
 	plt.title("Dendrogram showing relations between clusters")
 	plt.show()
-
-# def x(idlist, type, qualmatrix):
-	# COMBINE THE IDLIST WITH THE QUAL MATRIX AS DICT OR SUMTHIN
-	# SEPARATE INTO SUBLISTS - ONE SUBLIST PER CLUSTER CONTAINING A BUNCH OF (CLUSTERID, SEQSIM_AB) POINTS
-	# INITIALIZE FIGURE
-	# RUN third_graph ONL EACH OF THESE LISTS, BUT MAKE THEM SUBPLOTS
-	# WHEN DONE SHOW WHOLE THING AS ONE PLOT
-	# COLOR NOT NEEDED SINCE WE ELIMINATED ONE OF THE AXES BY SPLITTING THE DATA UP 
